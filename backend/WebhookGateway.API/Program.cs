@@ -11,6 +11,9 @@ public class Program
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen();
 		}
+		
+		builder.Services.AddSingleton<IWebhookProvider, GithubWebhookProvider>();
+		builder.Services.AddSingleton<WebhookProviderResolver>();
 
 
 		var app = builder.Build();
@@ -25,12 +28,14 @@ public class Program
 
 		app.MapGet("/", () => "success");
 
-		app.MapPost("/webhooks/{provider}", async (string provider, HttpRequest request) =>
+		app.MapPost("/webhooks/{providerName}", async (string providerName, WebhookProviderResolver resolver, HttpRequest request) =>
 		{
+			var provider = resolver.Resolve(providerName);
+			
 			using var reader = new StreamReader(request.Body);
 
 			var payload = await reader.ReadToEndAsync();
-			var metadata = new GithubWebhookProvider().ExtractMetadata(request);
+			var metadata = provider.ExtractMetadata(request);
 
 			var webhookEvent = WebhookEvent.New(
 				Guid.NewGuid(),
@@ -59,8 +64,8 @@ public sealed class WebhookEvent{
 		ReceivedAt = receivedAt;
 	}
 	
-	public static WebhookEvent New(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt) =>
-		new WebhookEvent(id, metadata, payload, receivedAt);
+	public static WebhookEvent New(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
+		=> new WebhookEvent(id, metadata, payload, receivedAt);
 }
 
 public sealed record WebhookEventMetadata(string Provider, string? DeliveryId, string? EventType);
@@ -82,4 +87,17 @@ public class GithubWebhookProvider : IWebhookProvider
 		
 		return new WebhookEventMetadata(Name, delivery, type);
 	}
+}
+
+public sealed class WebhookProviderResolver
+{
+	private readonly IReadOnlyDictionary<string, IWebhookProvider> _providers;
+
+	public WebhookProviderResolver(IEnumerable<IWebhookProvider> providers)
+	{
+		_providers = providers.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+	}
+
+	public IWebhookProvider Resolve(string provider)
+		=> _providers.GetValueOrDefault(provider) ?? throw new InvalidOperationException($"No provider found for '{provider}'");
 }
