@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Domain;
 
 namespace WebhookGateway.API.Persistence;
 
