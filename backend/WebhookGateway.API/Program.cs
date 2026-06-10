@@ -31,7 +31,7 @@ public class Program
 
 			var payload = await reader.ReadToEndAsync();
 
-			var webhookEvent = new WebhookEvent(
+			var webhookEvent = WebhookEvent.New(
 				Guid.NewGuid(),
 				provider,
 				payload,
@@ -47,10 +47,22 @@ public class Program
 	}
 }
 
-public sealed class WebhookEvent(
-	Guid Id,
-	string Provider,
-	string Payload,
-	Dictionary<string, string> Headers,
-	DateTimeOffset ReceivedAt
-);
+public sealed class WebhookEvent{
+	public Guid Id { get; }
+	public string Provider { get; }
+	public string Payload { get; }
+	public Dictionary<string, string> Headers { get; }
+	public DateTimeOffset ReceivedAt { get; }
+
+	private WebhookEvent(Guid id, string provider, string payload, Dictionary<string, string> headers, DateTimeOffset receivedAt)
+	{
+		Id = id;
+		Provider = provider;
+		Payload = payload;
+		Headers = headers;
+		ReceivedAt = receivedAt;
+	}
+	
+	public static WebhookEvent New(Guid id, string provider, string payload, Dictionary<string, string> headers, DateTimeOffset receivedAt) =>
+		new WebhookEvent(id, provider, payload, headers, receivedAt);
+}
