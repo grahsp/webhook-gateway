@@ -1,10 +1,17 @@
+using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Application.Providers;
 using WebhookGateway.API.Domain;
+using WebhookGateway.API.Infrastructure.Extensions;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
 
-public sealed class WebhookIngestor(WebhookProviderResolver resolver, AppDbContext db, TimeProvider time) : IWebhookIngestor
+public sealed class WebhookIngestor(
+	WebhookProviderResolver resolver,
+	AppDbContext db,
+	ILogger<WebhookIngestor> logger,
+	TimeProvider time)
+	: IWebhookIngestor
 {
 	public async Task Ingest(string providerName, IncomingWebhookRequest request)
 	{
@@ -16,8 +23,17 @@ public sealed class WebhookIngestor(WebhookProviderResolver resolver, AppDbConte
 			metadata,
 			request.Payload,
 			time.GetUtcNow());
-		
+
 		db.WebhookEvents.Add(webhookEvent);
-		await db.SaveChangesAsync();
+
+		try
+		{
+			await db.SaveChangesAsync();
+			logger.LogInformation("Webhook received: {DeliveryId}", metadata.DeliveryId);
+		}
+		catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+		{
+			logger.LogInformation("Duplicate webhook received: {DeliveryId}", metadata.DeliveryId);
+		}
 	}
 }
