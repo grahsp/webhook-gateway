@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Application.Providers;
+using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Persistence;
 
@@ -19,9 +20,13 @@ public class Program
 
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
+
+		builder.Services.AddSingleton(TimeProvider.System);
 		
-		builder.Services.AddSingleton<IWebhookProvider, GithubWebhookProvider>();
+		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
+		
 		builder.Services.AddSingleton<WebhookProviderResolver>();
+		builder.Services.AddSingleton<IWebhookProvider, GithubWebhookProvider>();
 
 
 		var app = builder.Build();

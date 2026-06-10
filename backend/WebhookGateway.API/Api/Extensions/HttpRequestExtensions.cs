@@ -9,8 +9,10 @@ public static class HttpRequestExtensions
 		using var reader = new StreamReader(request.Body);
 		var payload = await reader.ReadToEndAsync();
 		
-		var headers = request.Headers
-			.ToDictionary(x => x.Key, x => x.Value.ToString());
+		var headers = request.Headers.ToDictionary(
+				x => x.Key,
+				x => x.Value.ToString(),
+				StringComparer.OrdinalIgnoreCase);
 
 		return new IncomingWebhookRequest(payload, headers);
 	}
