@@ -24,7 +24,33 @@ public class Program
 		app.UseHttpsRedirection();
 
 		app.MapGet("/", () => "success");
+
+		app.MapPost("/webhooks/{provider}", async (string provider, HttpRequest request) =>
+		{
+			using var reader = new StreamReader(request.Body);
+
+			var payload = await reader.ReadToEndAsync();
+
+			var webhookEvent = new WebhookEvent(
+				Guid.NewGuid(),
+				provider,
+				payload,
+				request.Headers.ToDictionary(
+					h => h.Key,
+					h => h.Value.ToString()),
+				DateTimeOffset.UtcNow);
+
+			return Results.Ok();
+		});
 		
 		app.Run();
 	}
 }
+
+public sealed class WebhookEvent(
+	Guid Id,
+	string Provider,
+	string Payload,
+	Dictionary<string, string> Headers,
+	DateTimeOffset ReceivedAt
+);
