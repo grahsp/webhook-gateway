@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Application.Providers;
 using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Persistence;
-using WebhookGateway.API.Providers;
 
 namespace WebhookGateway.API;
 

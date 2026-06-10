@@ -1,6 +1,7 @@
+using WebhookGateway.API.Api.Extensions;
+using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Persistence;
-using WebhookGateway.API.Providers;
 
 namespace WebhookGateway.API.Endpoints;
 
@@ -20,16 +21,14 @@ public static class WebhookEndpoints
 		AppDbContext db)
 	{
 		var provider = resolver.Resolve(providerName);
-
-		using var reader = new StreamReader(request.Body);
-		var payload = await reader.ReadToEndAsync();
-
-		var metadata = provider.ExtractMetadata(request);
+		
+		var webhookRequest = await request.ExtractWebhookRequest();
+		var metadata = provider.ExtractMetadata(webhookRequest);
 
 		var webhookEvent = WebhookEvent.New(
 			Guid.NewGuid(),
 			metadata,
-			payload,
+			webhookRequest.Payload,
 			DateTimeOffset.UtcNow);
 
 		db.WebhookEvents.Add(webhookEvent);

@@ -1,4 +1,4 @@
-namespace WebhookGateway.API.Providers;
+namespace WebhookGateway.API.Application.Providers;
 
 public sealed class WebhookProviderResolver
 {
