@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Persistence;
+
 namespace WebhookGateway.API;
 
 public class Program
@@ -11,6 +14,9 @@ public class Program
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen();
 		}
+
+		builder.Services.AddDbContext<AppDbContext>(opts
+			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 		
 		builder.Services.AddSingleton<IWebhookProvider, GithubWebhookProvider>();
 		builder.Services.AddSingleton<WebhookProviderResolver>();
@@ -28,7 +34,7 @@ public class Program
 
 		app.MapGet("/", () => "success");
 
-		app.MapPost("/webhooks/{providerName}", async (string providerName, WebhookProviderResolver resolver, HttpRequest request) =>
+		app.MapPost("/webhooks/{providerName}", async (string providerName, WebhookProviderResolver resolver, AppDbContext db, HttpRequest request) =>
 		{
 			var provider = resolver.Resolve(providerName);
 			
@@ -42,6 +48,9 @@ public class Program
 				metadata,
 				payload,
 				DateTimeOffset.UtcNow);
+			
+			db.WebhookEvents.Add(webhookEvent);
+			await db.SaveChangesAsync();
 
 			return Results.Ok();
 		});
@@ -51,10 +60,12 @@ public class Program
 }
 
 public sealed class WebhookEvent{
-	public Guid Id { get; }
-	public WebhookEventMetadata Metadata { get; }
-	public string Payload { get; }
-	public DateTimeOffset ReceivedAt { get; }
+	public Guid Id { get; private set; }
+	public WebhookEventMetadata Metadata { get; private set; } = null!;
+	public string Payload { get; private set; } = null!;
+	public DateTimeOffset ReceivedAt { get; private set; }
+	
+	private WebhookEvent() { }
 
 	private WebhookEvent(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
 	{
