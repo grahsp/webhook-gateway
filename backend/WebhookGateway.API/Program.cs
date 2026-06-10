@@ -30,14 +30,12 @@ public class Program
 			using var reader = new StreamReader(request.Body);
 
 			var payload = await reader.ReadToEndAsync();
+			var metadata = new GithubWebhookProvider().ExtractMetadata(request);
 
 			var webhookEvent = WebhookEvent.New(
 				Guid.NewGuid(),
-				provider,
+				metadata,
 				payload,
-				request.Headers.ToDictionary(
-					h => h.Key,
-					h => h.Value.ToString()),
 				DateTimeOffset.UtcNow);
 
 			return Results.Ok();
@@ -49,20 +47,39 @@ public class Program
 
 public sealed class WebhookEvent{
 	public Guid Id { get; }
-	public string Provider { get; }
+	public WebhookEventMetadata Metadata { get; }
 	public string Payload { get; }
-	public Dictionary<string, string> Headers { get; }
 	public DateTimeOffset ReceivedAt { get; }
 
-	private WebhookEvent(Guid id, string provider, string payload, Dictionary<string, string> headers, DateTimeOffset receivedAt)
+	private WebhookEvent(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
 	{
 		Id = id;
-		Provider = provider;
+		Metadata = metadata;
 		Payload = payload;
-		Headers = headers;
 		ReceivedAt = receivedAt;
 	}
 	
-	public static WebhookEvent New(Guid id, string provider, string payload, Dictionary<string, string> headers, DateTimeOffset receivedAt) =>
-		new WebhookEvent(id, provider, payload, headers, receivedAt);
+	public static WebhookEvent New(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt) =>
+		new WebhookEvent(id, metadata, payload, receivedAt);
+}
+
+public sealed record WebhookEventMetadata(string Provider, string? DeliveryId, string? EventType);
+
+public interface IWebhookProvider
+{
+	string Name { get; }
+	WebhookEventMetadata ExtractMetadata(HttpRequest request);
+}
+
+public class GithubWebhookProvider : IWebhookProvider
+{
+	public string Name => "github";
+	
+	public WebhookEventMetadata ExtractMetadata(HttpRequest request)
+	{
+		request.Headers.TryGetValue("X-GitHub-Delivery", out var delivery);
+		request.Headers.TryGetValue("X-GitHub-Event", out var type);
+		
+		return new WebhookEventMetadata(Name, delivery, type);
+	}
 }
