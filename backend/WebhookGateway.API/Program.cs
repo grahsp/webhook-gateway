@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using WebhookGateway.API.Application.Providers;
+using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Persistence;
