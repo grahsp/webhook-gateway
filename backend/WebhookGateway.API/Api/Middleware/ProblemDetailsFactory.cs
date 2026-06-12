@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using WebhookGateway.API.Application.Exceptions;
+using WebhookGateway.API.Domain.Exceptions;
 
 namespace WebhookGateway.API.Api.Middleware;
 
@@ -15,6 +16,7 @@ public static class ProblemDetailsFactory
 			JsonException => Create(StatusCodes.Status400BadRequest, "Validation failed", ex.Message),
 			NotSupportedException => Create(StatusCodes.Status400BadRequest, "Validation failed", ex.Message),
 			NotFoundException => Create(StatusCodes.Status404NotFound, "Resource not found", "The requested resource was not found."),
+			DomainException => Create(StatusCodes.Status409Conflict, "Conflict with current state", ex.Message),
 			_ => Create(StatusCodes.Status500InternalServerError, "Internal server error", "An unexpected error occurred.")
 		};
 	}
