@@ -8,10 +8,17 @@ public sealed class WebhookRoute
 
 	private WebhookRoute() {}
 
-	public WebhookRoute(string name, WebhookSource source)
+	private WebhookRoute(string name, WebhookSource source)
 	{
 		Id = Guid.NewGuid();
 		Name = name;
 		Source = source;
+	}
+
+	public static WebhookRoute New(string name, WebhookSource source)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(name);
+		
+		return new WebhookRoute(name, source);
 	}
 }
