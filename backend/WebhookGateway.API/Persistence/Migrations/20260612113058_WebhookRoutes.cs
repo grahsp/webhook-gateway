@@ -29,7 +29,7 @@ namespace WebhookGateway.API.Persistence.Migrations
                 oldType: "text");
 
             migrationBuilder.AddColumn<Guid>(
-                name: "WebhookId",
+                name: "WebhookRouteId",
                 table: "WebhookEvents",
                 type: "uuid",
                 nullable: false,
@@ -41,7 +41,7 @@ namespace WebhookGateway.API.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Source = table.Column<int>(type: "integer", nullable: false)
+                    Source = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,9 +49,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebhookEvents_WebhookId_DeliveryId",
+                name: "IX_WebhookEvents_WebhookRouteId_DeliveryId",
                 table: "WebhookEvents",
-                columns: new[] { "WebhookId", "DeliveryId" },
+                columns: new[] { "WebhookRouteId", "DeliveryId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -67,11 +67,11 @@ namespace WebhookGateway.API.Persistence.Migrations
                 name: "WebhookRoutes");
 
             migrationBuilder.DropIndex(
-                name: "IX_WebhookEvents_WebhookId_DeliveryId",
+                name: "IX_WebhookEvents_WebhookRouteId_DeliveryId",
                 table: "WebhookEvents");
 
             migrationBuilder.DropColumn(
-                name: "WebhookId",
+                name: "WebhookRouteId",
                 table: "WebhookEvents");
 
             migrationBuilder.AlterColumn<string>(

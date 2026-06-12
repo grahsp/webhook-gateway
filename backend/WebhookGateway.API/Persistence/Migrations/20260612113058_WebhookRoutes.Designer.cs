@@ -12,7 +12,7 @@ using WebhookGateway.API.Persistence;
 namespace WebhookGateway.API.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260612085256_WebhookRoutes")]
+    [Migration("20260612113058_WebhookRoutes")]
     partial class WebhookRoutes
     {
         /// <inheritdoc />
@@ -47,12 +47,12 @@ namespace WebhookGateway.API.Persistence.Migrations
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("WebhookId")
+                    b.Property<Guid>("WebhookRouteId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WebhookId", "DeliveryId")
+                    b.HasIndex("WebhookRouteId", "DeliveryId")
                         .IsUnique();
 
                     b.ToTable("WebhookEvents");
@@ -69,8 +69,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Source")
-                        .HasColumnType("integer");
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

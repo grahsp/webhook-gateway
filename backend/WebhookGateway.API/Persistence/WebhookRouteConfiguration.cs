@@ -15,5 +15,8 @@ public class WebhookRouteConfiguration : IEntityTypeConfiguration<WebhookRoute>
 		builder.Property(x => x.Name)
 			.HasMaxLength(100)
 			.IsRequired();
+
+		builder.Property(x => x.Source)
+			.HasConversion<string>();
 	}
 }
