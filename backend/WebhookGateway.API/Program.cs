@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Endpoints;
@@ -30,6 +31,8 @@ public class Program
 
 
 		var app = builder.Build();
+		
+		app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 		if (app.Environment.IsDevelopment())
 		{

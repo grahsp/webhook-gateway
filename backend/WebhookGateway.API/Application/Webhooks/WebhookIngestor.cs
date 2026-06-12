@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Extensions;
@@ -16,7 +17,7 @@ public sealed class WebhookIngestor(
 	public async Task Ingest(Guid webhookRouteId, IncomingWebhookRequest request)
 	{
 		var route = await db.WebhookRoutes.FirstOrDefaultAsync(x => x.Id == webhookRouteId)
-			?? throw new InvalidOperationException($"WebhookRoute with id '{webhookRouteId}' not found.");
+			?? throw new WebhookRouteNotFoundException(webhookRouteId);
 		
 		var handler = resolver.Resolve(route.Source);
 		var metadata = handler.ExtractMetadata(request);
