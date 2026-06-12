@@ -8,14 +8,14 @@ public sealed class WebhookEvent{
 	
 	private WebhookEvent() { }
 
-	private WebhookEvent(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
+	private WebhookEvent(WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
 	{
-		Id = id;
+		Id = Guid.NewGuid();
 		Metadata = metadata;
 		Payload = payload;
 		ReceivedAt = receivedAt;
 	}
 	
-	public static WebhookEvent New(Guid id, WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
-		=> new WebhookEvent(id, metadata, payload, receivedAt);
+	public static WebhookEvent New(WebhookEventMetadata metadata, string payload, DateTimeOffset receivedAt)
+		=> new WebhookEvent(metadata, payload, receivedAt);
 }

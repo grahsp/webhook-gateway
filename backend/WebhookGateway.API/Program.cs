@@ -25,8 +25,8 @@ public class Program
 		
 		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
 		
-		builder.Services.AddSingleton<WebhookProviderResolver>();
-		builder.Services.AddSingleton<IWebhookProvider, GithubWebhookProvider>();
+		builder.Services.AddSingleton<WebhookSourceResolver>();
+		builder.Services.AddSingleton<IWebhookSourceHandler, GithubWebhookSourceHandler>();
 
 
 		var app = builder.Build();

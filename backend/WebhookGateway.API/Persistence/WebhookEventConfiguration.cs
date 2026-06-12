@@ -14,13 +14,13 @@ public class WebhookEventConfiguration : IEntityTypeConfiguration<WebhookEvent>
 		{
 			metadata.HasIndex(x => new
 			{
-				x.Provider,
+				x.Source,
 				x.DeliveryId
 			}).IsUnique();
 			
-			metadata.Property(x => x.Provider)
+			metadata.Property(x => x.Source)
 				.HasMaxLength(50)
-				.HasColumnName("Provider");
+				.HasColumnName("Source");
 
 			metadata.Property(x => x.EventType)
 				.HasMaxLength(100)

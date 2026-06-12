@@ -3,15 +3,15 @@ using WebhookGateway.API.Domain;
 
 namespace WebhookGateway.API.Application.Providers;
 
-public class GithubWebhookProvider : IWebhookProvider
+public class GithubWebhookSourceHandler : IWebhookSourceHandler
 {
-	public string Name => "github";
+	public WebhookSource Source => WebhookSource.GitHub;
 	
 	public WebhookEventMetadata ExtractMetadata(IncomingWebhookRequest request)
 	{
 		request.Headers.TryGetValue("X-GitHub-Delivery", out var delivery);
 		request.Headers.TryGetValue("X-GitHub-Event", out var type);
 		
-		return new WebhookEventMetadata(Name, delivery, type);
+		return new WebhookEventMetadata(Source, delivery, type);
 	}
 }

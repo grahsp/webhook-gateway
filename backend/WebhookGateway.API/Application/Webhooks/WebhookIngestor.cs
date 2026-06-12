@@ -7,19 +7,18 @@ using WebhookGateway.API.Persistence;
 namespace WebhookGateway.API.Application.Webhooks;
 
 public sealed class WebhookIngestor(
-	WebhookProviderResolver resolver,
+	WebhookSourceResolver resolver,
 	AppDbContext db,
 	ILogger<WebhookIngestor> logger,
 	TimeProvider time)
 	: IWebhookIngestor
 {
-	public async Task Ingest(string providerName, IncomingWebhookRequest request)
+	public async Task Ingest(WebhookSource source, IncomingWebhookRequest request)
 	{
-		var provider = resolver.Resolve(providerName);
-		var metadata = provider.ExtractMetadata(request);
+		var handler = resolver.Resolve(source);
+		var metadata = handler.ExtractMetadata(request);
 		
 		var webhookEvent = WebhookEvent.New(
-			Guid.NewGuid(),
 			metadata,
 			request.Payload,
 			time.GetUtcNow());

@@ -3,8 +3,8 @@ using WebhookGateway.API.Domain;
 
 namespace WebhookGateway.API.Application.Providers;
 
-public interface IWebhookProvider
+public interface IWebhookSourceHandler
 {
-	string Name { get; }
+	WebhookSource Source { get; }
 	WebhookEventMetadata ExtractMetadata(IncomingWebhookRequest request);
 }

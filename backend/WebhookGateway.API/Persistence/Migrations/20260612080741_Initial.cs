@@ -16,7 +16,7 @@ namespace WebhookGateway.API.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Source = table.Column<int>(type: "integer", maxLength: 50, nullable: false),
                     DeliveryId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     EventType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Payload = table.Column<string>(type: "text", nullable: false),
@@ -28,9 +28,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_WebhookEvents_Provider_DeliveryId",
+                name: "IX_WebhookEvents_Source_DeliveryId",
                 table: "WebhookEvents",
-                columns: new[] { "Provider", "DeliveryId" },
+                columns: new[] { "Source", "DeliveryId" },
                 unique: true);
         }
 

@@ -22,7 +22,7 @@ namespace WebhookGateway.API.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("WebhookGateway.API.WebhookEvent", b =>
+            modelBuilder.Entity("WebhookGateway.API.Domain.WebhookEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -40,9 +40,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                     b.ToTable("WebhookEvents");
                 });
 
-            modelBuilder.Entity("WebhookGateway.API.WebhookEvent", b =>
+            modelBuilder.Entity("WebhookGateway.API.Domain.WebhookEvent", b =>
                 {
-                    b.OwnsOne("WebhookGateway.API.WebhookEventMetadata", "Metadata", b1 =>
+                    b.OwnsOne("WebhookGateway.API.Domain.WebhookEventMetadata", "Metadata", b1 =>
                         {
                             b1.Property<Guid>("WebhookEventId")
                                 .HasColumnType("uuid");
@@ -57,15 +57,14 @@ namespace WebhookGateway.API.Persistence.Migrations
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("EventType");
 
-                            b1.Property<string>("Provider")
-                                .IsRequired()
+                            b1.Property<int>("Source")
                                 .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
-                                .HasColumnName("Provider");
+                                .HasColumnType("integer")
+                                .HasColumnName("Source");
 
                             b1.HasKey("WebhookEventId");
 
-                            b1.HasIndex("Provider", "DeliveryId")
+                            b1.HasIndex("Source", "DeliveryId")
                                 .IsUnique();
 
                             b1.ToTable("WebhookEvents");

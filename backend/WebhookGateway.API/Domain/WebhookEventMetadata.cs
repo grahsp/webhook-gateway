@@ -1,3 +1,3 @@
 namespace WebhookGateway.API.Domain;
 
-public sealed record WebhookEventMetadata(string Provider, string? DeliveryId, string? EventType);
+public sealed record WebhookEventMetadata(WebhookSource Source, string? DeliveryId, string? EventType);
