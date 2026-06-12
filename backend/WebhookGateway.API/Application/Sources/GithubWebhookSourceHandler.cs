@@ -12,6 +12,6 @@ public class GithubWebhookSourceHandler : IWebhookSourceHandler
 		request.Headers.TryGetValue("X-GitHub-Delivery", out var delivery);
 		request.Headers.TryGetValue("X-GitHub-Event", out var type);
 		
-		return new WebhookEventMetadata(Source, delivery, type);
+		return new WebhookEventMetadata(delivery, type);
 	}
 }

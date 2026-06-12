@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Extensions;
@@ -13,13 +14,18 @@ public sealed class WebhookIngestor(
 	TimeProvider time)
 	: IWebhookIngestor
 {
-	public async Task Ingest(WebhookSource source, IncomingWebhookRequest request)
+	public async Task Ingest(Guid webhookRouteId, IncomingWebhookRequest request)
 	{
-		var handler = resolver.Resolve(source);
+		var route = await db.WebhookRoutes.FirstOrDefaultAsync(x => x.Id == webhookRouteId)
+			?? throw new WebhookRouteNotFoundException(webhookRouteId);
+		
+		var handler = resolver.Resolve(route.Source);
 		var metadata = handler.ExtractMetadata(request);
 		
 		var webhookEvent = WebhookEvent.New(
-			metadata,
+			route.Id,
+			metadata.DeliveryId,
+			metadata.EventType,
 			request.Payload,
 			time.GetUtcNow());
 
