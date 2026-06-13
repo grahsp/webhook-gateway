@@ -23,5 +23,14 @@ public class WebhookEventConfiguration : IEntityTypeConfiguration<WebhookEvent>
 		builder.Property(x => x.Payload)
 			.HasMaxLength(100000)
 			.IsRequired();
+		
+		
+		builder.Navigation(x => x.Deliveries)
+			.UsePropertyAccessMode(PropertyAccessMode.Field);
+
+		builder.HasMany(x => x.Deliveries)
+			.WithOne()
+			.HasForeignKey(x => x.WebhookEventId)
+			.OnDelete(DeleteBehavior.Cascade);
 	}
 }
