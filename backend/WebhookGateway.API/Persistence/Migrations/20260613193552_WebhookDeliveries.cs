@@ -20,11 +20,19 @@ namespace WebhookGateway.API.Persistence.Migrations
                     WebhookDestinationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    DeliveredAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    StartedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeliveredAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    FailedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_WebhookDeliveries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WebhookDeliveries_WebhookDestinations_WebhookDestinationId",
+                        column: x => x.WebhookDestinationId,
+                        principalTable: "WebhookDestinations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_WebhookDeliveries_WebhookEvents_WebhookEventId",
                         column: x => x.WebhookEventId,
@@ -32,6 +40,11 @@ namespace WebhookGateway.API.Persistence.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WebhookDeliveries_WebhookDestinationId",
+                table: "WebhookDeliveries",
+                column: "WebhookDestinationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WebhookDeliveries_WebhookEventId",

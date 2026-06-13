@@ -14,5 +14,10 @@ public class WebhookDeliveryConfiguration : IEntityTypeConfiguration<WebhookDeli
 		
 		builder.Property(x => x.Status)
 			.HasConversion<string>();
+
+		builder.HasOne(x => x.WebhookDestination)
+			.WithMany()
+			.HasForeignKey(x => x.WebhookDestinationId)
+			.OnDelete(DeleteBehavior.Cascade);
 	}
 }

@@ -29,7 +29,7 @@ public class WebhookEventConfiguration : IEntityTypeConfiguration<WebhookEvent>
 			.UsePropertyAccessMode(PropertyAccessMode.Field);
 
 		builder.HasMany(x => x.Deliveries)
-			.WithOne()
+			.WithOne(x => x.WebhookEvent)
 			.HasForeignKey(x => x.WebhookEventId)
 			.OnDelete(DeleteBehavior.Cascade);
 	}

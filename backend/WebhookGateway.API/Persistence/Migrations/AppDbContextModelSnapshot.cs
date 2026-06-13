@@ -34,6 +34,12 @@ namespace WebhookGateway.API.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DeliveredAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("FailedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -45,6 +51,8 @@ namespace WebhookGateway.API.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WebhookDestinationId");
 
                     b.HasIndex("WebhookEventId");
 
@@ -130,11 +138,21 @@ namespace WebhookGateway.API.Persistence.Migrations
 
             modelBuilder.Entity("WebhookGateway.API.Domain.WebhookDelivery", b =>
                 {
-                    b.HasOne("WebhookGateway.API.Domain.WebhookEvent", null)
+                    b.HasOne("WebhookGateway.API.Domain.WebhookDestination", "WebhookDestination")
+                        .WithMany()
+                        .HasForeignKey("WebhookDestinationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WebhookGateway.API.Domain.WebhookEvent", "WebhookEvent")
                         .WithMany("Deliveries")
                         .HasForeignKey("WebhookEventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("WebhookDestination");
+
+                    b.Navigation("WebhookEvent");
                 });
 
             modelBuilder.Entity("WebhookGateway.API.Domain.WebhookDestination", b =>
