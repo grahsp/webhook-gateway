@@ -1,7 +1,6 @@
 using WebhookGateway.API.Api.Extensions;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Application.Webhooks.Models;
-using WebhookGateway.API.Domain;
 
 namespace WebhookGateway.API.Endpoints;
 
@@ -11,11 +10,17 @@ public static class WebhookEndpoints
 	{
 		app.MapPost("/webhooks/{routeId}", ReceiveWebhook);
 
-		app.MapPost("/route", CreateWebhookRoute);
-		app.MapGet("/route", ListWebhookRoutes);
-		app.MapGet("/route/{id}", GetWebhookRoute)
+		app.MapPost("/routes", CreateWebhookRoute);
+		app.MapGet("/routes", ListWebhookRoutes);
+		app.MapGet("/routes/{routeId}", GetWebhookRoute)
 			.WithName(nameof(GetWebhookRoute));
-		app.MapDelete("/route", DeleteWebhookRoute);
+		app.MapDelete("/routes/{routeId}", DeleteWebhookRoute);
+		
+		app.MapPost("/routes/{routeId}/destinations", CreateWebhookDestination);
+		app.MapGet("/routes/{routeId}/destinations", ListWebhookDestinations);
+		app.MapGet("/routes/{routeId}/destinations/{destinationId}", GetWebhookDestination)
+			.WithName(nameof(GetWebhookDestination));
+		app.MapDelete("/routes/{routeId}/destinations/{destinationId}", DeleteWebhookDestination);
 
 		return app;
 	}
@@ -31,12 +36,12 @@ public static class WebhookEndpoints
 	private static async Task<IResult> CreateWebhookRoute(CreateWebhookRouteRequest request, IWebhookRouteService service)
 	{
 		var route = await service.Create(request);
-		return Results.CreatedAtRoute(nameof(GetWebhookRoute), new { route.Id }, route);
+		return Results.CreatedAtRoute(nameof(GetWebhookRoute), new { routeId = route.Id }, route);
 	}
 
-	private static async Task<IResult> GetWebhookRoute(Guid id, IWebhookRouteService service)
+	private static async Task<IResult> GetWebhookRoute(Guid routeId, IWebhookRouteService service)
 	{
-		var route = await service.Get(id);
+		var route = await service.Get(routeId);
 		return Results.Ok(route);
 	}
 
@@ -46,9 +51,34 @@ public static class WebhookEndpoints
 		return Results.Ok(routes);
 	}
 	
-	private static async Task<IResult> DeleteWebhookRoute(Guid id, IWebhookRouteService service)
+	private static async Task<IResult> DeleteWebhookRoute(Guid routeId, IWebhookRouteService service)
 	{
-		await service.Delete(id);
+		await service.Delete(routeId);
+		return Results.NoContent();
+	}
+	
+	
+	private static async Task<IResult> CreateWebhookDestination(Guid routeId, CreateWebhookDestinationRequest request, IWebhookDestinationService service)
+	{
+		var route = await service.Create(routeId, request);
+		return Results.CreatedAtRoute(nameof(GetWebhookDestination), new { routeId = route.WebhookRouteId, destinationId = route.Id }, route);
+	}
+
+	private static async Task<IResult> GetWebhookDestination(Guid routeId, Guid destinationId, IWebhookDestinationService service)
+	{
+		var route = await service.Get(routeId, destinationId);
+		return Results.Ok(route);
+	}
+
+	private static async Task<IResult> ListWebhookDestinations(Guid routeId, IWebhookDestinationService service)
+	{
+		var routes = await service.List(routeId);
+		return Results.Ok(routes);
+	}
+	
+	private static async Task<IResult> DeleteWebhookDestination(Guid routeId, Guid destinationId, IWebhookDestinationService service)
+	{
+		await service.Delete(routeId, destinationId);
 		return Results.NoContent();
 	}
 }
