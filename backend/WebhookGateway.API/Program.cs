@@ -24,6 +24,7 @@ public class Program
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 
+		builder.Services.AddHttpClient();
 		builder.Services.AddSingleton(TimeProvider.System);
 		
 		builder.Services.ConfigureHttpJsonOptions(options
