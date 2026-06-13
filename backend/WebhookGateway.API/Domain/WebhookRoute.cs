@@ -26,7 +26,7 @@ public sealed class WebhookRoute
 		return new WebhookRoute(name, source);
 	}
 
-	public void AddDestination(string url)
+	public WebhookDestination AddDestination(string url)
 	{
 		var destination = WebhookDestination.New(Id, url);
 		
@@ -34,5 +34,15 @@ public sealed class WebhookRoute
 			throw new DuplicateDestinationException(destination.Url);
 		
 		_destinations.Add(destination);
+		return destination;
+	}
+	
+	public void RemoveDestination(Guid destinationId)
+	{
+		var destination = _destinations
+				.SingleOrDefault(x => x.Id == destinationId)
+			?? throw new DestinationDoesNotBelongToRouteException();
+
+		_destinations.Remove(destination);
 	}
 }
