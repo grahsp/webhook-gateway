@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
+using WebhookGateway.API.Domain;
 using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Persistence;
 
@@ -31,6 +32,8 @@ public class Program
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
 		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
+		
+		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
 		
 		builder.Services.AddSingleton<WebhookSourceResolver>();
 		builder.Services.AddSingleton<IWebhookSourceHandler, GithubWebhookSourceHandler>();
