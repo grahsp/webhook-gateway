@@ -6,6 +6,7 @@ namespace WebhookGateway.API.Persistence;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> opts) : DbContext(opts)
 {
 	public DbSet<WebhookRoute> WebhookRoutes { get; set; }
+	public DbSet<WebhookDestination> WebhookDestinations { get; set; }
 	public DbSet<WebhookEvent> WebhookEvents { get; set; }
 	
 	protected override void OnModelCreating(ModelBuilder builder)

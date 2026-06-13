@@ -18,5 +18,13 @@ public class WebhookRouteConfiguration : IEntityTypeConfiguration<WebhookRoute>
 
 		builder.Property(x => x.Source)
 			.HasConversion<string>();
+		
+		builder.Navigation(x => x.Destinations)
+			.UsePropertyAccessMode(PropertyAccessMode.Field);
+
+		builder.HasMany(x => x.Destinations)
+			.WithOne()
+			.HasForeignKey(x => x.WebhookRouteId)
+			.OnDelete(DeleteBehavior.Cascade);
 	}
 }
