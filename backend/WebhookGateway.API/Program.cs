@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
-using WebhookGateway.API.Domain;
 using WebhookGateway.API.Endpoints;
+using WebhookGateway.API.Infrastructure.Webhooks;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API;
@@ -26,15 +26,22 @@ public class Program
 
 		builder.Services.AddHttpClient();
 		builder.Services.AddSingleton(TimeProvider.System);
-		
+
 		builder.Services.ConfigureHttpJsonOptions(options
 			=> options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-		
+
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
 		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
-		
+
 		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
+
+		builder.Services.AddSingleton<IWebhookSourceSecretProvider, WebhookSourceSecretProvider>();
+		builder.Services
+			.AddOptions<WebhookSecrets>()
+			.BindConfiguration(WebhookSecrets.SectionName)
+			.Validate(options => options.IsValid())
+			.ValidateOnStart();
 		
 		builder.Services.AddSingleton<WebhookSourceResolver>();
 		builder.Services.AddSingleton<IWebhookSourceHandler, GithubWebhookSourceHandler>();

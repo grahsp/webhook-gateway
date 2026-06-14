@@ -24,6 +24,8 @@ public sealed class WebhookIngestor(
 			?? throw new WebhookRouteNotFoundException(webhookRouteId);
 		
 		var handler = resolver.Resolve(route.Source);
+		
+		handler.ValidateSignature(request);
 		var metadata = handler.ExtractMetadata(request);
 		
 		var webhookEvent = WebhookEvent.New(
