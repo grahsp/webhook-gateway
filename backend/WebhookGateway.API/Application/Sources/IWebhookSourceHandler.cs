@@ -7,4 +7,5 @@ public interface IWebhookSourceHandler
 {
 	WebhookSource Source { get; }
 	WebhookEventMetadata ExtractMetadata(IncomingWebhookRequest request);
+	void ValidateSignature(IncomingWebhookRequest request);
 }
