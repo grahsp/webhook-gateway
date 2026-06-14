@@ -12,6 +12,9 @@ public sealed class WebhookDelivery
 	
 	public DeliveryStatus Status { get; private set; } = DeliveryStatus.Pending;
 	
+	public int? StatusCode { get; private set; }
+	public string? ErrorMessage { get; private set; } = null;
+	
 	public DateTimeOffset CreatedAt { get; private set; }
 	public DateTimeOffset? StartedAt { get; private set; }
 	public DateTimeOffset? DeliveredAt { get; private set; }
@@ -35,21 +38,24 @@ public sealed class WebhookDelivery
 		StartedAt = now;
 	}
 
-	public void MarkSucceeded(DateTimeOffset now)
+	public void MarkSucceeded(int statusCode, DateTimeOffset now)
 	{
 		if (Status != DeliveryStatus.InProgress)
 			throw new InvalidOperationException("Delivery not in progress");
 		
 		Status = DeliveryStatus.Succeeded;
+		StatusCode = statusCode;
 		DeliveredAt = now;
 	}
 	
-	public void MarkFailed(DateTimeOffset now)
+	public void MarkFailed(int? statusCode, string? errorMessage, DateTimeOffset? now)
 	{
 		if (Status != DeliveryStatus.InProgress)
 			throw new InvalidOperationException("Delivery not in progress");
 		
 		Status = DeliveryStatus.Failed;
+		StatusCode = statusCode;
+		ErrorMessage = errorMessage;
 		FailedAt = now;
 	}
 }

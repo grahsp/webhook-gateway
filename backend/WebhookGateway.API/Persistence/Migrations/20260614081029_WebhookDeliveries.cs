@@ -19,6 +19,8 @@ namespace WebhookGateway.API.Persistence.Migrations
                     WebhookEventId = table.Column<Guid>(type: "uuid", nullable: false),
                     WebhookDestinationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
+                    StatusCode = table.Column<int>(type: "integer", nullable: true),
+                    ErrorMessage = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     StartedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     DeliveredAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),

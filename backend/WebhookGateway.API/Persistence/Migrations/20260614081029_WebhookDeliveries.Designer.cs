@@ -12,7 +12,7 @@ using WebhookGateway.API.Persistence;
 namespace WebhookGateway.API.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260613193552_WebhookDeliveries")]
+    [Migration("20260614081029_WebhookDeliveries")]
     partial class WebhookDeliveries
     {
         /// <inheritdoc />
@@ -37,6 +37,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DeliveredAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset?>("FailedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -46,6 +49,9 @@ namespace WebhookGateway.API.Persistence.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("WebhookDestinationId")
                         .HasColumnType("uuid");

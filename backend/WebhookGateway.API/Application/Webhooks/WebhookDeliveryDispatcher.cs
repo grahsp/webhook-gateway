@@ -30,13 +30,13 @@ public sealed class WebhookDeliveryDispatcher(
 				var response = await http.PostAsync(delivery.WebhookDestination.Url, content);
 				
 				if (response.IsSuccessStatusCode)
-					delivery.MarkSucceeded(time.GetUtcNow());
+					delivery.MarkSucceeded((int)response.StatusCode, time.GetUtcNow());
 				else
-					delivery.MarkFailed(time.GetUtcNow());
+					delivery.MarkFailed((int)response.StatusCode, response.ReasonPhrase, time.GetUtcNow());
 			}
-			catch
+			catch(Exception ex)
 			{
-				delivery.MarkFailed(time.GetUtcNow());
+				delivery.MarkFailed(null, ex.Message, time.GetUtcNow());
 			}
 		}
 		
