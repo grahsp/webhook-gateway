@@ -8,6 +8,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> opts) : DbContex
 	public DbSet<WebhookRoute> WebhookRoutes { get; set; }
 	public DbSet<WebhookDestination> WebhookDestinations { get; set; }
 	public DbSet<WebhookEvent> WebhookEvents { get; set; }
+	public DbSet<WebhookDelivery> WebhookDeliveries { get; set; }
 	
 	protected override void OnModelCreating(ModelBuilder builder)
 	{
