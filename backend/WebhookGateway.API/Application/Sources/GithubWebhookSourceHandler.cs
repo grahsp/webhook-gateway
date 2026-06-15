@@ -9,8 +9,7 @@ namespace WebhookGateway.API.Application.Sources;
 
 public sealed class GithubWebhookSourceHandler(
 	IWebhookSourceSecretProvider secrets,
-	ILogger<GithubWebhookSourceHandler> logger
-	)
+	ILogger<GithubWebhookSourceHandler> logger)
 	: IWebhookSourceHandler
 {
 	public WebhookSource Source => WebhookSource.GitHub;
