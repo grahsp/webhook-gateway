@@ -3,5 +3,6 @@ namespace WebhookGateway.API.Domain;
 public enum WebhookSource
 {
 	Unknown = 0,
-	GitHub = 1
+	Test = 1,
+	GitHub = 2,
 }

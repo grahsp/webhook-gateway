@@ -36,14 +36,13 @@ public class Program
 
 		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
 
+		builder.Services.AddOptions<WebhookSecrets>()
+			.BindConfiguration(WebhookSecrets.SectionName);
+		
 		builder.Services.AddSingleton<IWebhookSourceSecretProvider, WebhookSourceSecretProvider>();
-		builder.Services
-			.AddOptions<WebhookSecrets>()
-			.BindConfiguration(WebhookSecrets.SectionName)
-			.Validate(options => options.IsValid())
-			.ValidateOnStart();
 		
 		builder.Services.AddSingleton<WebhookSourceResolver>();
+		builder.Services.AddSingleton<IWebhookSourceHandler, TestWebhookSourceHandler>();
 		builder.Services.AddSingleton<IWebhookSourceHandler, GithubWebhookSourceHandler>();
 
 
