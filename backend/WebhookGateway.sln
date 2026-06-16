@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{5FEAF494
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebhookGateway.Receiver", "WebhookGateway.Receiver\WebhookGateway.Receiver.csproj", "{834B1680-6390-4856-903E-22FAE59A04AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebhookGateway.LoadGenerator", "WebhookGateway.LoadGenerator\WebhookGateway.LoadGenerator.csproj", "{919AE656-04F4-4953-9D61-83BD7CC71F8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,8 +28,13 @@ Global
 		{834B1680-6390-4856-903E-22FAE59A04AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{834B1680-6390-4856-903E-22FAE59A04AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{834B1680-6390-4856-903E-22FAE59A04AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{919AE656-04F4-4953-9D61-83BD7CC71F8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{919AE656-04F4-4953-9D61-83BD7CC71F8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{919AE656-04F4-4953-9D61-83BD7CC71F8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{919AE656-04F4-4953-9D61-83BD7CC71F8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{834B1680-6390-4856-903E-22FAE59A04AA} = {5FEAF494-CDB0-4CB9-9FF4-BC98726E4BEE}
+		{919AE656-04F4-4953-9D61-83BD7CC71F8E} = {5FEAF494-CDB0-4CB9-9FF4-BC98726E4BEE}
 	EndGlobalSection
 EndGlobal
