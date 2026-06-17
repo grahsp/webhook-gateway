@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Endpoints;
+using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Infrastructure.Webhooks;
 using WebhookGateway.API.Persistence;
 
@@ -24,7 +26,6 @@ public class Program
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 
-		builder.Services.AddHttpClient();
 		builder.Services.AddSingleton(TimeProvider.System);
 
 		builder.Services.ConfigureHttpJsonOptions(options
@@ -32,9 +33,23 @@ public class Program
 
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
-		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
+		
+		builder.Services.AddSingleton<IConnection>(_ =>
+		{
+			var factory = new ConnectionFactory
+			{
+				HostName = "localhost",
+				UserName = "guest",
+				Password = "guest"
+			};
 
-		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
+			return factory.CreateConnectionAsync()
+				.GetAwaiter()
+				.GetResult();
+		});
+		
+		builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
+		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
 
 		builder.Services.AddOptions<WebhookSecrets>()
 			.BindConfiguration(WebhookSecrets.SectionName);

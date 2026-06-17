@@ -7,37 +7,36 @@ namespace WebhookGateway.API.Application.Webhooks;
 
 public sealed class WebhookDeliveryDispatcher(
 	AppDbContext db,
-	HttpClient http,
+	IHttpClientFactory http,
 	TimeProvider time)
 	: IWebhookDeliveryDispatcher
 {
-	public async Task Dispatch(Guid webhookEventId)
+	public async Task DispatchAsync(Guid webhookDeliveryId)
 	{
-		var @event = await db.WebhookEvents
-				.Where(x => x.Id == webhookEventId)
-				.Include(x => x.Deliveries)
-				.ThenInclude(x => x.WebhookDestination)
+		var delivery = await db.WebhookDeliveries
+				.Where(x => x.Id == webhookDeliveryId)
+				.Include(x => x.WebhookEvent)
+				.Include(x => x.WebhookDestination)
 				.FirstOrDefaultAsync()
-			?? throw new WebhookEventNotFoundException(webhookEventId);
+			?? throw new WebhookDeliveryNotFoundException(webhookDeliveryId);
 		
-		foreach (var delivery in @event.Deliveries)
-		{
-			delivery.MarkStarted(time.GetUtcNow());
+		delivery.MarkStarted(time.GetUtcNow());
 
-			try
-			{
-				var content = new StringContent(@event.Payload, Encoding.UTF8, "application/json");
-				var response = await http.PostAsync(delivery.WebhookDestination.Url, content);
+		try
+		{
+			var client = http.CreateClient();
+			
+			var content = new StringContent(delivery.WebhookEvent.Payload, Encoding.UTF8, "application/json");
+			var response = await client.PostAsync(delivery.WebhookDestination.Url, content);
 				
-				if (response.IsSuccessStatusCode)
-					delivery.MarkSucceeded((int)response.StatusCode, time.GetUtcNow());
-				else
-					delivery.MarkFailed((int)response.StatusCode, response.ReasonPhrase, time.GetUtcNow());
-			}
-			catch(Exception ex)
-			{
-				delivery.MarkFailed(null, ex.Message, time.GetUtcNow());
-			}
+			if (response.IsSuccessStatusCode)
+				delivery.MarkSucceeded((int)response.StatusCode, time.GetUtcNow());
+			else
+				delivery.MarkFailed((int)response.StatusCode, response.ReasonPhrase, time.GetUtcNow());
+		}
+		catch(Exception ex)
+		{
+			delivery.MarkFailed(null, ex.Message, time.GetUtcNow());
 		}
 		
 		await db.SaveChangesAsync();
