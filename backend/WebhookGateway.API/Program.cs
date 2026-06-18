@@ -34,6 +34,9 @@ public class Program
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
 
+		builder.Services.AddHostedService<RabbitMqInitializationHostedService>();
+		builder.Services.AddSingleton<IRabbitMqInitializer, RabbitMqInitializer>();
+
 		builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
 		builder.Services.AddOptions<RabbitMqOptions>()
 			.BindConfiguration(RabbitMqOptions.SectionName);

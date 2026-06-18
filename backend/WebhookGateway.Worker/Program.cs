@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using RabbitMQ.Client;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Persistence;
@@ -20,6 +19,9 @@ public class Program
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 		
 		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
+		
+		builder.Services.AddHostedService<RabbitMqInitializationHostedService>();
+		builder.Services.AddSingleton<IRabbitMqInitializer, RabbitMqInitializer>();
 		
 		builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
 		builder.Services.AddOptions<RabbitMqOptions>()

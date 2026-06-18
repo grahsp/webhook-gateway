@@ -17,13 +17,6 @@ public sealed class Worker(
 		var connection = await provider.GetConnectionAsync();
 		var channel = await connection.CreateChannelAsync(cancellationToken: ct);
 
-		await channel.QueueDeclareAsync(
-			queue: "webhook-deliveries",
-			durable: true,
-			exclusive: false,
-			autoDelete: false,
-			cancellationToken: ct);
-
 		var consumer = new AsyncEventingBasicConsumer(channel);
 
 		consumer.ReceivedAsync += async (_, ea) =>

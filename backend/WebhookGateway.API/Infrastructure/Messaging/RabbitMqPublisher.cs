@@ -8,16 +8,7 @@ public sealed class RabbitMqPublisher(IRabbitMqConnectionProvider provider) : IM
 	public async Task PublishAsync<T>(T message, CancellationToken ct = default)
 	{
 		var connection = await provider.GetConnectionAsync();
-		
 		await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
-
-		await channel.QueueDeclareAsync(
-			queue: "webhook-deliveries",
-			durable: true,
-			exclusive: false,
-			autoDelete: false,
-			arguments: null,
-			cancellationToken: ct);
 
 		var body = JsonSerializer.SerializeToUtf8Bytes(message);
 
