@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using WebhookGateway.API.Application.Webhooks;
+using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.Worker;
@@ -20,19 +21,9 @@ public class Program
 		
 		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
 		
-		builder.Services.AddSingleton<IConnection>(_ =>
-		{
-			var factory = new ConnectionFactory
-			{
-				HostName = "localhost",
-				UserName = "guest",
-				Password = "guest"
-			};
-
-			return factory.CreateConnectionAsync()
-				.GetAwaiter()
-				.GetResult();
-		});
+		builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
+		builder.Services.AddOptions<RabbitMqOptions>()
+			.BindConfiguration(RabbitMqOptions.SectionName);
 
 		var host = builder.Build();
 		host.Run();

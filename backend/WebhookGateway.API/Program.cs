@@ -33,20 +33,10 @@ public class Program
 
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
-		
-		builder.Services.AddSingleton<IConnection>(_ =>
-		{
-			var factory = new ConnectionFactory
-			{
-				HostName = "localhost",
-				UserName = "guest",
-				Password = "guest"
-			};
 
-			return factory.CreateConnectionAsync()
-				.GetAwaiter()
-				.GetResult();
-		});
+		builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
+		builder.Services.AddOptions<RabbitMqOptions>()
+			.BindConfiguration(RabbitMqOptions.SectionName);
 		
 		builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
 		builder.Services.AddScoped<IWebhookIngestor, WebhookIngestor>();
