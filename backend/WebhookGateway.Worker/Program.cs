@@ -18,7 +18,7 @@ public class Program
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 		
-		builder.Services.AddScoped<IWebhookDeliveryDispatcher, WebhookDeliveryDispatcher>();
+		builder.Services.AddScoped<IWebhookBatchDeliveryDispatcher, WebhookBatchDeliveryDispatcher>();
 		
 		builder.Services.AddHostedService<RabbitMqInitializationHostedService>();
 		builder.Services.AddSingleton<IRabbitMqInitializer, RabbitMqInitializer>();
