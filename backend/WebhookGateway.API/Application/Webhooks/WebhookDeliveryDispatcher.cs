@@ -1,16 +1,21 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using WebhookGateway.API.Application.Exceptions;
+using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
 
 public sealed class WebhookDeliveryDispatcher(
 	AppDbContext db,
+	IOptions<RabbitMqOptions> options,
 	IHttpClientFactory http,
 	TimeProvider time)
 	: IWebhookDeliveryDispatcher
 {
+	private readonly RabbitMqOptions _options = options.Value;
+	
 	public async Task DispatchAsync(Guid webhookDeliveryId)
 	{
 		var delivery = await db.WebhookDeliveries
@@ -20,7 +25,7 @@ public sealed class WebhookDeliveryDispatcher(
 				.FirstOrDefaultAsync()
 			?? throw new WebhookDeliveryNotFoundException(webhookDeliveryId);
 		
-		delivery.MarkStarted(time.GetUtcNow());
+		delivery.StartAttempt(_options.MaxRetryAttempts, time.GetUtcNow());
 
 		try
 		{

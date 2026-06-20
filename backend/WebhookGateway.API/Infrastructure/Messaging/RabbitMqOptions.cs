@@ -9,4 +9,6 @@ public sealed class RabbitMqOptions
 	public required string Password { get; init; }
 
 	public string QueueName { get; init; } = "webhook-deliveries";
+	
+	public int MaxRetryAttempts { get; init; } = 5;
 }
