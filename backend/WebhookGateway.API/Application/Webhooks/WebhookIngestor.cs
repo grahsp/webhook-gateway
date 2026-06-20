@@ -3,13 +3,14 @@ using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Extensions;
+using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
 
 public sealed class WebhookIngestor(
 	WebhookSourceResolver resolver,
-	IWebhookDeliveryDispatcher dispatcher,
+	IMessagePublisher queue,
 	AppDbContext db,
 	ILogger<WebhookIngestor> logger,
 	TimeProvider time)
@@ -44,12 +45,22 @@ public sealed class WebhookIngestor(
 		{
 			await db.SaveChangesAsync();
 			logger.LogInformation("Webhook received: {DeliveryId}", metadata.DeliveryId);
-
-			await dispatcher.Dispatch(webhookEvent.Id);
 		}
 		catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
 		{
 			logger.LogInformation("Duplicate webhook received: {DeliveryId}", metadata.DeliveryId);
+			return;
+		}
+
+		try
+		{
+			foreach (var delivery in webhookEvent.Deliveries)
+				await queue.PublishAsync(delivery.Id);
+		}
+		catch(Exception ex)
+		{
+			logger.LogError(ex, "Failed to enqueue deliveries for event {EventId}", webhookEvent.Id);
+			throw;
 		}
 	}
 }
