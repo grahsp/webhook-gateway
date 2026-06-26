@@ -1,21 +1,21 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using WebhookGateway.API.Infrastructure.Messaging;
+using WebhookGateway.API.Domain;
+using WebhookGateway.API.Infrastructure.Webhooks;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
 
 public sealed class WebhookBatchDeliveryDispatcher(
 	AppDbContext db,
-	IOptions<RabbitMqOptions> options,
+	IWebhookDeliveryFailureClassifier classifier,
+	IWebhookDeliveryRetryPolicy retryPolicy,
 	IHttpClientFactory http,
+	ILogger<WebhookBatchDeliveryDispatcher> logger,
 	TimeProvider time)
 	: IWebhookBatchDeliveryDispatcher
 {
-	private readonly RabbitMqOptions _options = options.Value;
-	
-	public async Task DispatchAsync(IEnumerable<Guid> webhookDeliveryId, CancellationToken ct = default)
+	public async Task<IReadOnlyList<DeliveryProcessingResult>> DispatchAsync(IEnumerable<Guid> webhookDeliveryId, CancellationToken ct = default)
 	{
 		var deliveries = await db.WebhookDeliveries
 			.Where(x => webhookDeliveryId.Contains(x.Id))
@@ -25,29 +25,58 @@ public sealed class WebhookBatchDeliveryDispatcher(
 			.ToListAsync(ct);
 		
 		var client = http.CreateClient();
+		var results = new List<DeliveryProcessingResult>();
 
-		foreach (var delivery in deliveries) {
+		foreach (var delivery in deliveries)
+		{
+			DeliveryDispatchResult classification;
+			
+			var attempt = delivery.StartAttempt(time.GetUtcNow());
+				
+			db.Add(attempt);
+			await db.SaveChangesAsync(ct);
+			
 			try
 			{
-				var attempt = delivery.StartAttempt(_options.MaxRetryAttempts, time.GetUtcNow());
-				
-				db.Add(attempt);
-				await db.SaveChangesAsync(ct);
-				
 				var content = new StringContent(delivery.WebhookEvent.Payload, Encoding.UTF8, "application/json");
 				var response = await client.PostAsync(delivery.WebhookDestination.Url, content, ct);
 				
-				if (response.IsSuccessStatusCode)
-					delivery.MarkSucceeded((int)response.StatusCode, time.GetUtcNow());
-				else
-					delivery.MarkFailed((int)response.StatusCode, response.ReasonPhrase, time.GetUtcNow());
+				classification = classifier.Classify(delivery.Id, response);
 			}
 			catch(Exception ex)
 			{
-				delivery.MarkFailed(null, ex.Message, time.GetUtcNow());
+				logger.LogWarning(ex, "Failed to dispatch delivery {Exception}", ex.Message);
+				classification = classifier.Classify(delivery.Id, ex);
 			}
+			
+			var processed = ApplyResult(delivery, classification);
+			results.Add(processed);
 		}
 		
 		await db.SaveChangesAsync(ct);
+		return results;
+	}
+	
+	private DeliveryProcessingResult ApplyResult(WebhookDelivery delivery, DeliveryDispatchResult result)
+	{
+		var action = retryPolicy.Decide(delivery, result);
+
+		switch (action)
+		{
+			case DeliveryAction.Ack:
+				delivery.MarkSucceeded(result.StatusCode!.Value, time.GetUtcNow());
+				break;
+
+			case DeliveryAction.Retry:
+				delivery.MarkAttemptFailed(result.StatusCode, result.ErrorMessage, time.GetUtcNow());
+				break;
+
+			case DeliveryAction.DeadLetter:
+				delivery.MarkAttemptFailed(result.StatusCode, result.ErrorMessage, time.GetUtcNow());
+				delivery.MarkFailed();
+				break;
+		}
+
+		return new DeliveryProcessingResult(delivery.Id, action);
 	}
 }

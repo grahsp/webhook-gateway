@@ -18,11 +18,11 @@ public sealed class Worker(
 	private static readonly TimeSpan BatchTimeout = TimeSpan.FromMilliseconds(200);
 
 	private readonly Channel<QueuedDelivery> _buffer = Channel.CreateBounded<QueuedDelivery>(new BoundedChannelOptions(PrefetchCount)
-		{
-			SingleReader = true,
-			SingleWriter = false,
-			FullMode = BoundedChannelFullMode.Wait
-		});
+	{
+		SingleReader = true,
+		SingleWriter = false,
+		FullMode = BoundedChannelFullMode.Wait
+	});
 
 	protected async override Task ExecuteAsync(CancellationToken ct)
 	{
@@ -42,28 +42,17 @@ public sealed class Worker(
 			try
 			{
 				var deliveryId = JsonSerializer.Deserialize<Guid>(ea.Body.Span);
-
-				await _buffer.Writer.WriteAsync(
-					new QueuedDelivery(deliveryId, ea.DeliveryTag),
-					ct);
+				await _buffer.Writer.WriteAsync(new QueuedDelivery(deliveryId, ea.DeliveryTag), ct);
 			}
 			catch (Exception ex)
 			{
 				logger.LogError(ex, "Failed to buffer RabbitMQ message");
 
-				await channel.BasicNackAsync(
-					ea.DeliveryTag,
-					multiple: false,
-					requeue: true,
-					cancellationToken: ct);
+				await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true, cancellationToken: ct);
 			}
 		};
 
-		await channel.BasicConsumeAsync(
-			queue: "webhook-deliveries",
-			autoAck: false,
-			consumer: consumer,
-			cancellationToken: ct);
+		await channel.BasicConsumeAsync(queue: "webhook-deliveries", autoAck: false, consumer: consumer, cancellationToken: ct);
 
 		logger.LogInformation("Worker started consuming messages");
 
@@ -113,13 +102,42 @@ public sealed class Worker(
 			var dispatcher = scope.ServiceProvider
 				.GetRequiredService<IWebhookBatchDeliveryDispatcher>();
 
-			await dispatcher.DispatchAsync(batch.Select(x => x.DeliveryId).ToList(), ct);
-			await channel.BasicAckAsync(batch[^1].DeliveryTag, multiple: true, cancellationToken: ct);
+			var results = await dispatcher
+				.DispatchAsync(batch.Select(x => x.DeliveryId), ct);
+
+			var lookup = results.ToDictionary(x => x.DeliveryId);
+
+			foreach (var message in batch)
+			{
+				if (!lookup.TryGetValue(message.DeliveryId, out var result))
+					throw new InvalidOperationException($"Dispatcher returned no result for delivery '{message.DeliveryId}'.");
+
+				await ApplyActionAsync(channel, message.DeliveryTag, result.Action, ct);
+			}
 		}
 		catch (Exception ex)
 		{
 			logger.LogError(ex, "Failed to process delivery batch");
-			await channel.BasicNackAsync(batch[^1].DeliveryTag, multiple: true, requeue: true, cancellationToken: ct);
+
+			var highestTag = batch.Max(x => x.DeliveryTag);
+			await channel.BasicNackAsync(highestTag, multiple: true, requeue: true, cancellationToken: ct);
 		}
+	}
+	
+	private static ValueTask ApplyActionAsync(IChannel channel, ulong deliveryTag, DeliveryAction action, CancellationToken ct)
+	{
+		return action switch
+		{
+			DeliveryAction.Ack =>
+				channel.BasicAckAsync(deliveryTag, multiple: false, cancellationToken: ct),
+
+			DeliveryAction.Retry =>
+				channel.BasicNackAsync(deliveryTag, multiple: false, requeue: true, cancellationToken: ct),
+
+			DeliveryAction.DeadLetter =>
+				channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, cancellationToken: ct),
+
+			_ => throw new ArgumentOutOfRangeException(nameof(action))
+		};
 	}
 }

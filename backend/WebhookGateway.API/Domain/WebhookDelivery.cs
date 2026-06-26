@@ -29,14 +29,9 @@ public sealed class WebhookDelivery
 		WebhookDestinationId = destinationId;
 		CreatedAt = now;
 	}
-	
-	public bool CanRetry(int maxAttempts) => AttemptCount < maxAttempts;
 
-	public WebhookDeliveryAttempt StartAttempt(int maxAttempts, DateTimeOffset now)
+	public WebhookDeliveryAttempt StartAttempt(DateTimeOffset now)
 	{
-		if (!CanRetry(maxAttempts))
-			throw new InvalidOperationException("Delivery already reached max attempts");
-		
 		if (IsTerminal)
 			throw new InvalidOperationException("Delivery already succeeded");
 		
@@ -62,7 +57,7 @@ public sealed class WebhookDelivery
 		Status = DeliveryStatus.Succeeded;
 	}
 	
-	public void MarkFailed(int? statusCode, string? errorMessage, DateTimeOffset now)
+	public void MarkAttemptFailed(int? statusCode, string? errorMessage, DateTimeOffset now)
 	{
 		if (IsTerminal)
 			throw new InvalidOperationException("Delivery not in progress");
@@ -71,6 +66,13 @@ public sealed class WebhookDelivery
 			throw new InvalidOperationException("No attempt in progress");
 		
 		attempt.RecordFailure(statusCode, errorMessage, now);
+	}
+	
+	public void MarkFailed()
+	{
+		if (IsTerminal)
+			throw new InvalidOperationException("Delivery not in progress");
+		
 		Status = DeliveryStatus.Failed;
 	}
 

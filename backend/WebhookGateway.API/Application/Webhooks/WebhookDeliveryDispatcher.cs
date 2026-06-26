@@ -25,7 +25,7 @@ public sealed class WebhookDeliveryDispatcher(
 				.FirstOrDefaultAsync()
 			?? throw new WebhookDeliveryNotFoundException(webhookDeliveryId);
 		
-		delivery.StartAttempt(_options.MaxRetryAttempts, time.GetUtcNow());
+		delivery.StartAttempt(time.GetUtcNow());
 
 		try
 		{
@@ -37,11 +37,11 @@ public sealed class WebhookDeliveryDispatcher(
 			if (response.IsSuccessStatusCode)
 				delivery.MarkSucceeded((int)response.StatusCode, time.GetUtcNow());
 			else
-				delivery.MarkFailed((int)response.StatusCode, response.ReasonPhrase, time.GetUtcNow());
+				delivery.MarkFailed();
 		}
 		catch(Exception ex)
 		{
-			delivery.MarkFailed(null, ex.Message, time.GetUtcNow());
+			delivery.MarkFailed();
 		}
 		
 		await db.SaveChangesAsync();
