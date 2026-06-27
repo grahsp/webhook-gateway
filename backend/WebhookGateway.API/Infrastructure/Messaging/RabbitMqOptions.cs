@@ -8,5 +8,10 @@ public sealed class RabbitMqOptions
 	public required string Username { get; init; }
 	public required string Password { get; init; }
 
-	public string QueueName { get; init; } = "webhook-deliveries";
+	public string DeliveryQueue { get; init; } = "webhook-deliveries";
+	public string RetryQueue { get; init; } = "webhook-deliveries-retry";
+	public string DeadLetterQueue { get; init; } = "webhook-deliveries-dlq";
+	
+	public int RetryAttempts { get; init; } = 5;
+	public TimeSpan RetryDelaySeconds { get; init; } = TimeSpan.FromSeconds(30);
 }

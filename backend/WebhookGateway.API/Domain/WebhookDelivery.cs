@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace WebhookGateway.API.Domain;
 
 public sealed class WebhookDelivery
@@ -10,15 +12,14 @@ public sealed class WebhookDelivery
 	public Guid WebhookDestinationId { get; private set; }
 	public WebhookDestination WebhookDestination { get; private set; } = null!;
 	
-	public DeliveryStatus Status { get; private set; } = DeliveryStatus.Pending;
+	private readonly List<WebhookDeliveryAttempt> _attempts = [];
+	public IReadOnlyCollection<WebhookDeliveryAttempt> Attempts => _attempts;
+	private int AttemptCount => _attempts.Count;
 	
-	public int? StatusCode { get; private set; }
-	public string? ErrorMessage { get; private set; } = null;
+	public DeliveryStatus Status { get; private set; } = DeliveryStatus.Pending;
+	private bool IsTerminal => Status is DeliveryStatus.Succeeded or DeliveryStatus.Failed;
 	
 	public DateTimeOffset CreatedAt { get; private set; }
-	public DateTimeOffset? StartedAt { get; private set; }
-	public DateTimeOffset? DeliveredAt { get; private set; }
-	public DateTimeOffset? FailedAt { get; private set; }
 	
 	private WebhookDelivery() {}
 
@@ -29,33 +30,69 @@ public sealed class WebhookDelivery
 		CreatedAt = now;
 	}
 
-	public void MarkStarted(DateTimeOffset now)
+	public WebhookDeliveryAttempt StartAttempt(DateTimeOffset now)
 	{
-		if (Status != DeliveryStatus.Pending)
-			throw new InvalidOperationException("Delivery already started");
+		if (IsTerminal)
+			throw new InvalidOperationException("Delivery already succeeded");
 		
+		if (TryGetAttemptInProgress(out _))
+			throw new InvalidOperationException("Delivery already in progress");
+		
+		var attempt = WebhookDeliveryAttempt.StartAttempt(Id, _attempts.Count + 1, now);
+		_attempts.Add(attempt);
+
 		Status = DeliveryStatus.InProgress;
-		StartedAt = now;
+		return attempt;
+	}
+
+	public bool TryStartAttempt(DateTimeOffset now,[NotNullWhen(true)] out WebhookDeliveryAttempt? attempt)
+	{
+		try
+		{
+			attempt = StartAttempt(now);
+			return true;
+		}
+		catch (InvalidOperationException)
+		{
+			attempt = null;
+			return false;
+		}
 	}
 
 	public void MarkSucceeded(int statusCode, DateTimeOffset now)
 	{
-		if (Status != DeliveryStatus.InProgress)
+		if (IsTerminal)
 			throw new InvalidOperationException("Delivery not in progress");
 		
+		if (!TryGetAttemptInProgress(out var attempt))
+			throw new InvalidOperationException("No attempt in progress");
+		
+		attempt.RecordSuccess(statusCode, now);
 		Status = DeliveryStatus.Succeeded;
-		StatusCode = statusCode;
-		DeliveredAt = now;
 	}
 	
-	public void MarkFailed(int? statusCode, string? errorMessage, DateTimeOffset? now)
+	public void MarkAttemptFailed(int? statusCode, string? errorMessage, DateTimeOffset now)
 	{
-		if (Status != DeliveryStatus.InProgress)
+		if (IsTerminal)
+			throw new InvalidOperationException("Delivery not in progress");
+		
+		if (!TryGetAttemptInProgress(out var attempt))
+			throw new InvalidOperationException("No attempt in progress");
+		
+		attempt.RecordFailure(statusCode, errorMessage, now);
+	}
+	
+	public void MarkFailed()
+	{
+		if (IsTerminal)
 			throw new InvalidOperationException("Delivery not in progress");
 		
 		Status = DeliveryStatus.Failed;
-		StatusCode = statusCode;
-		ErrorMessage = errorMessage;
-		FailedAt = now;
+	}
+
+	private bool TryGetAttemptInProgress([NotNullWhen(true)] out WebhookDeliveryAttempt? attempt)
+	{
+		attempt = _attempts.SingleOrDefault(x => x.Status == DeliveryAttemptStatus.InProgress);
+		return attempt != null;
 	}
 }

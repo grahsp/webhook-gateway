@@ -19,5 +19,13 @@ public class WebhookDeliveryConfiguration : IEntityTypeConfiguration<WebhookDeli
 			.WithMany()
 			.HasForeignKey(x => x.WebhookDestinationId)
 			.OnDelete(DeleteBehavior.Cascade);
+		
+		builder.Navigation(x => x.Attempts)
+			.UsePropertyAccessMode(PropertyAccessMode.Field);
+		
+		builder.HasMany(x => x.Attempts)
+			.WithOne()
+			.HasForeignKey(x => x.WebhookDeliveryId)
+			.OnDelete(DeleteBehavior.Cascade);
 	}
 }

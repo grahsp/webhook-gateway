@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Domain;
@@ -11,11 +12,14 @@ namespace WebhookGateway.API.Application.Webhooks;
 public sealed class WebhookIngestor(
 	WebhookSourceResolver resolver,
 	IMessagePublisher queue,
+	IOptions<RabbitMqOptions> options,
 	AppDbContext db,
 	ILogger<WebhookIngestor> logger,
 	TimeProvider time)
 	: IWebhookIngestor
 {
+	private readonly RabbitMqOptions _options = options.Value;
+	
 	public async Task Ingest(Guid webhookRouteId, IncomingWebhookRequest request)
 	{
 		var route = await db.WebhookRoutes
@@ -55,7 +59,7 @@ public sealed class WebhookIngestor(
 		try
 		{
 			foreach (var delivery in webhookEvent.Deliveries)
-				await queue.PublishAsync(delivery.Id);
+				await queue.PublishAsync(_options.DeliveryQueue, delivery.Id);
 		}
 		catch(Exception ex)
 		{
