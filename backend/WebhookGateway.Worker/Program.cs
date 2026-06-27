@@ -24,6 +24,7 @@ public class Program
 		builder.Services.AddScoped<IWebhookBatchDeliveryDispatcher, WebhookBatchDeliveryDispatcher>();
 		
 		builder.Services.AddHostedService<RabbitMqInitializationHostedService>();
+		builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
 		builder.Services.AddSingleton<IRabbitMqInitializer, RabbitMqInitializer>();
 		
 		builder.Services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();

@@ -2,5 +2,5 @@ namespace WebhookGateway.API.Infrastructure.Messaging;
 
 public interface IMessagePublisher
 {
-	Task PublishAsync<T>(T message, CancellationToken ct = default);
+	Task PublishAsync<T>(string queue, T message, CancellationToken ct = default);
 }

@@ -19,7 +19,7 @@ public sealed class WebhookDeliveryRetryPolicy(
 		if (result.Type == DeliveryResultType.PermanentFailure)
 			return DeliveryAction.DeadLetter;
 
-		if (delivery.Attempts.Count >= _options.MaxRetryAttempts)
+		if (delivery.Attempts.Count >= _options.RetryAttempts)
 			return DeliveryAction.DeadLetter;
 
 		return DeliveryAction.Retry;

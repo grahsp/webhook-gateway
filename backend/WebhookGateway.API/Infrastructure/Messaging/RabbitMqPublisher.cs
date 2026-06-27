@@ -5,7 +5,7 @@ namespace WebhookGateway.API.Infrastructure.Messaging;
 
 public sealed class RabbitMqPublisher(IRabbitMqConnectionProvider provider) : IMessagePublisher
 {
-	public async Task PublishAsync<T>(T message, CancellationToken ct = default)
+	public async Task PublishAsync<T>(string routingKey, T message, CancellationToken ct = default)
 	{
 		var connection = await provider.GetConnectionAsync();
 		await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);
@@ -14,7 +14,7 @@ public sealed class RabbitMqPublisher(IRabbitMqConnectionProvider provider) : IM
 
 		await channel.BasicPublishAsync(
 			exchange: "",
-			routingKey: "webhook-deliveries",
+			routingKey: routingKey,
 			mandatory: true,
 			body: body,
 			cancellationToken: ct);
