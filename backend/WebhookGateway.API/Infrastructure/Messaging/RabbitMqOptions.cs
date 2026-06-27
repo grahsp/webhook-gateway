@@ -10,6 +10,7 @@ public sealed class RabbitMqOptions
 
 	public string DeliveryQueue { get; init; } = "webhook-deliveries";
 	public string RetryQueue { get; init; } = "webhook-deliveries-retry";
+	public string DeadLetterQueue { get; init; } = "webhook-deliveries-dlq";
 	
 	public int RetryAttempts { get; init; } = 5;
 	public TimeSpan RetryDelaySeconds { get; init; } = TimeSpan.FromSeconds(30);

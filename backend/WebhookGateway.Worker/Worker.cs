@@ -140,6 +140,10 @@ public sealed class Worker(
 				await publisher.PublishAsync(_options.RetryQueue, message.Body, ct);
 				break;
 
+			case DeliveryAction.DeadLetter:
+				await publisher.PublishAsync(_options.DeadLetterQueue, message.Body, ct);
+				break;
+
 			default:
 				throw new ArgumentOutOfRangeException(nameof(action));
 			

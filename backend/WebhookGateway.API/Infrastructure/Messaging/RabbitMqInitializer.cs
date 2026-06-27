@@ -33,5 +33,12 @@ public sealed class RabbitMqInitializer(
 				["x-dead-letter-routing-key"] = _options.DeliveryQueue
 			},
 			cancellationToken: ct);
+		
+		await channel.QueueDeclareAsync(
+			queue: _options.DeadLetterQueue,
+			durable: true,
+			exclusive: false,
+			autoDelete: false,
+			cancellationToken: ct);
 	}
 }
