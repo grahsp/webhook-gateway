@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using WebhookGateway.API.Application.Exceptions;
@@ -5,6 +6,7 @@ using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Extensions;
 using WebhookGateway.API.Infrastructure.Messaging;
+using WebhookGateway.API.Infrastructure.Metrics;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
@@ -14,6 +16,7 @@ public sealed class WebhookIngestor(
 	IMessagePublisher queue,
 	IOptions<RabbitMqOptions> options,
 	AppDbContext db,
+	IngestionMetrics metrics,
 	ILogger<WebhookIngestor> logger,
 	TimeProvider time)
 	: IWebhookIngestor
@@ -22,6 +25,8 @@ public sealed class WebhookIngestor(
 	
 	public async Task Ingest(Guid webhookRouteId, IncomingWebhookRequest request)
 	{
+		var started = Stopwatch.GetTimestamp();
+		
 		var route = await db.WebhookRoutes
 				.Where(r => r.Id == webhookRouteId)
 				.Include(r => r.Destinations)
@@ -41,6 +46,8 @@ public sealed class WebhookIngestor(
 			time.GetUtcNow());
 
 		db.WebhookEvents.Add(webhookEvent);
+		
+		metrics.WebhookReceived(route.Source.ToString(), metadata.EventType ?? "unknown");
 
 		foreach (var destination in route.Destinations)
 			webhookEvent.AddDelivery(destination.Id, time.GetUtcNow());
@@ -56,15 +63,19 @@ public sealed class WebhookIngestor(
 			return;
 		}
 
-		try
+		foreach (var delivery in webhookEvent.Deliveries)
 		{
-			foreach (var delivery in webhookEvent.Deliveries)
+			try
+			{
 				await queue.PublishAsync(_options.DeliveryQueue, delivery.Id);
+			}
+			catch(Exception ex)
+			{
+				logger.LogError(ex, "Failed to enqueue deliveries for event {EventId}", webhookEvent.Id);
+				throw;
+			}
 		}
-		catch(Exception ex)
-		{
-			logger.LogError(ex, "Failed to enqueue deliveries for event {EventId}", webhookEvent.Id);
-			throw;
-		}
+		
+		metrics.RecordIngestionDuration(Stopwatch.GetElapsedTime(started).TotalMilliseconds);
 	}
 }

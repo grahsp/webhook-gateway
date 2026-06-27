@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
-using RabbitMQ.Client;
+using OpenTelemetry.Metrics;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Infrastructure.Messaging;
+using WebhookGateway.API.Infrastructure.Metrics;
 using WebhookGateway.API.Infrastructure.Webhooks;
 using WebhookGateway.API.Persistence;
 
@@ -30,6 +31,19 @@ public class Program
 
 		builder.Services.ConfigureHttpJsonOptions(options
 			=> options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+		
+		builder.Services.AddSingleton<IngestionMetrics>();
+
+		builder.Services
+			.AddOpenTelemetry()
+			.WithMetrics(metrics =>
+			{
+				metrics
+					.AddAspNetCoreInstrumentation()
+					.AddHttpClientInstrumentation()
+					.AddMeter(IngestionMetrics.MeterName)
+					.AddPrometheusExporter();
+			});
 
 		builder.Services.AddScoped<IWebhookRouteService, WebhookRouteService>();
 		builder.Services.AddScoped<IWebhookDestinationService, WebhookDestinationService>();
@@ -66,6 +80,7 @@ public class Program
 
 		app.UseHttpsRedirection();
 
+		app.MapPrometheusScrapingEndpoint();
 		app.MapGet("/", () => "success");
 
 		app.MapWebhookEndpoints();
