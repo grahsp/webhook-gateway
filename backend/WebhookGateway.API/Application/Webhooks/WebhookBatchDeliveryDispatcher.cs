@@ -27,14 +27,22 @@ public sealed class WebhookBatchDeliveryDispatcher(
 		var client = http.CreateClient();
 		var results = new List<DeliveryProcessingResult>();
 
+		var started = new List<WebhookDelivery>();
 		foreach (var delivery in deliveries)
 		{
-			DeliveryDispatchResult classification;
-			
-			var attempt = delivery.StartAttempt(time.GetUtcNow());
-				
+			if (!delivery.TryStartAttempt(time.GetUtcNow(), out var attempt))
+				continue;
+
+			started.Add(delivery);
 			db.Add(attempt);
-			await db.SaveChangesAsync(ct);
+		}
+		
+		await db.SaveChangesAsync(ct);
+		
+
+		foreach (var delivery in started)
+		{
+			DeliveryDispatchResult classification;
 			
 			try
 			{

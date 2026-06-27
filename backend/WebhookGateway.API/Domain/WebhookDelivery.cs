@@ -45,6 +45,20 @@ public sealed class WebhookDelivery
 		return attempt;
 	}
 
+	public bool TryStartAttempt(DateTimeOffset now,[NotNullWhen(true)] out WebhookDeliveryAttempt? attempt)
+	{
+		try
+		{
+			attempt = StartAttempt(now);
+			return true;
+		}
+		catch (InvalidOperationException)
+		{
+			attempt = null;
+			return false;
+		}
+	}
+
 	public void MarkSucceeded(int statusCode, DateTimeOffset now)
 	{
 		if (IsTerminal)
