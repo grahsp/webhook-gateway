@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Extensions.Options;
@@ -5,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Infrastructure.Messaging;
+using WebhookGateway.API.Infrastructure.Metrics;
 
 namespace WebhookGateway.Worker;
 
@@ -13,6 +15,7 @@ public sealed class Worker(
 	IRabbitMqConnectionProvider provider,
 	IOptions<RabbitMqOptions> options,
 	IServiceScopeFactory scopes,
+	WorkerMetrics metrics,
 	ILogger<Worker> logger)
 	: BackgroundService
 {
@@ -47,6 +50,8 @@ public sealed class Worker(
 			try
 			{
 				var deliveryId = JsonSerializer.Deserialize<Guid>(ea.Body.Span);
+				
+				metrics.MessageReceived();
 				await _buffer.Writer.WriteAsync(new Message<Guid>(deliveryId, ea.DeliveryTag), ct);
 			}
 			catch (Exception ex)
@@ -68,7 +73,11 @@ public sealed class Worker(
 			if (batch.Count == 0)
 				continue;
 
+			var start = Stopwatch.GetTimestamp();
 			await ProcessBatchAsync(channel, batch, ct);
+			
+			var duration = Stopwatch.GetElapsedTime(start);
+			metrics.RecordProcessingDuration(duration.TotalMilliseconds / batch.Count);
 		}
 	}
 
@@ -134,13 +143,16 @@ public sealed class Worker(
 		switch (action)
 		{
 			case DeliveryAction.Ack:
+				metrics.MessageCompleted();
 				break;
 
 			case DeliveryAction.Retry:
+				metrics.MessageRetried();
 				await publisher.PublishAsync(_options.RetryQueue, message.Body, ct);
 				break;
 
 			case DeliveryAction.DeadLetter:
+				metrics.MessageFailed();
 				await publisher.PublishAsync(_options.DeadLetterQueue, message.Body, ct);
 				break;
 

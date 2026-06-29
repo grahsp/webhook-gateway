@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Infrastructure.Messaging;
+using WebhookGateway.API.Infrastructure.Metrics;
 using WebhookGateway.API.Infrastructure.Webhooks;
 using WebhookGateway.API.Persistence;
 
@@ -10,7 +13,7 @@ public class Program
 {
 	public static void Main(string[] args)
 	{
-		var builder = Host.CreateApplicationBuilder(args);
+		var builder = WebApplication.CreateBuilder(args);
 		
 		builder.Services.AddHostedService<Worker>();
 		builder.Services.AddSingleton(TimeProvider.System);
@@ -18,6 +21,17 @@ public class Program
 		
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
+
+		builder.Services.AddSingleton<WorkerMetrics>();
+		
+		builder.Services
+			.AddOpenTelemetry()
+			.WithMetrics(metrics =>
+			{
+				metrics
+					.AddMeter(WorkerMetrics.MeterName)
+					.AddPrometheusExporter();
+			});
 		
 		builder.Services.AddScoped<IWebhookDeliveryFailureClassifier, WebhookDeliveryFailureClassifier>();
 		builder.Services.AddScoped<IWebhookDeliveryRetryPolicy, WebhookDeliveryRetryPolicy>();
@@ -31,7 +45,10 @@ public class Program
 		builder.Services.AddOptions<RabbitMqOptions>()
 			.BindConfiguration(RabbitMqOptions.SectionName);
 
-		var host = builder.Build();
-		host.Run();
+		var app = builder.Build();
+
+		app.MapPrometheusScrapingEndpoint();
+		
+		app.Run();
 	}
 }
