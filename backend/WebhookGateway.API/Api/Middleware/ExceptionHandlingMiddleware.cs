@@ -1,3 +1,5 @@
+using WebhookGateway.API.Logging;
+
 namespace WebhookGateway.API.Api.Middleware;
 
 public sealed class ExceptionHandlingMiddleware(
@@ -12,11 +14,11 @@ public sealed class ExceptionHandlingMiddleware(
 		}
 		catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
 		{
-			logger.LogInformation("Request was canceled");
+			logger.RequestCanceled(context.Request.Method, context.Request.Path);
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex, "Unhandled exception");
+			logger.UnhandledRequestException(ex, context.Request.Method, context.Request.Path);
 
 			if (context.Response.HasStarted)
 				throw;

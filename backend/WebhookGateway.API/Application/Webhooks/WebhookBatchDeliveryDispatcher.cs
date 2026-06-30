@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Webhooks;
+using WebhookGateway.API.Logging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
@@ -53,11 +54,16 @@ public sealed class WebhookBatchDeliveryDispatcher(
 			}
 			catch(Exception ex)
 			{
-				logger.LogWarning(ex, "Failed to dispatch delivery {Exception}", ex.Message);
+				logger.DeliveryDispatchException(
+					ex,
+					delivery.Id,
+					delivery.WebhookDestinationId,
+					delivery.Attempts.Count);
 				classification = classifier.Classify(delivery.Id, ex);
 			}
 			
 			var processed = ApplyResult(delivery, classification);
+			LogDeliveryOutcome(delivery, classification, processed.Action);
 			results.Add(processed);
 		}
 		
@@ -86,5 +92,51 @@ public sealed class WebhookBatchDeliveryDispatcher(
 		}
 
 		return new DeliveryProcessingResult(delivery.Id, action);
+	}
+	
+	private void LogDeliveryOutcome(WebhookDelivery delivery, DeliveryDispatchResult result, DeliveryAction action)
+	{
+		switch (action)
+		{
+			case DeliveryAction.Ack:
+				logger.DeliveryCompleted(
+					delivery.Id,
+					delivery.WebhookDestinationId,
+					result.StatusCode,
+					delivery.Attempts.Count,
+					action);
+				break;
+
+			case DeliveryAction.Retry:
+				if (result.StatusCode is >= 500 and <= 599)
+				{
+					logger.EndpointReturned5xxRetrying(
+						delivery.Id,
+						delivery.WebhookDestinationId,
+						result.StatusCode.Value,
+						delivery.Attempts.Count);
+				}
+				else
+				{
+					logger.DeliveryRetryScheduled(
+						delivery.Id,
+						delivery.WebhookDestinationId,
+						result.StatusCode,
+						delivery.Attempts.Count);
+				}
+				break;
+
+			case DeliveryAction.DeadLetter:
+				logger.DeliveryDeadLettered(
+					delivery.Id,
+					delivery.WebhookDestinationId,
+					result.StatusCode,
+					delivery.Attempts.Count,
+					result.Type);
+				break;
+
+			default:
+				throw new ArgumentOutOfRangeException(nameof(action));
+		}
 	}
 }

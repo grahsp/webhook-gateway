@@ -7,6 +7,7 @@ using RabbitMQ.Client.Events;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Infrastructure.Metrics;
+using WebhookGateway.Worker.Logging;
 
 namespace WebhookGateway.Worker;
 
@@ -19,6 +20,7 @@ public sealed class Worker(
 	ILogger<Worker> logger)
 	: BackgroundService
 {
+	private const int DeliveryIdErrorSampleSize = 10;
 	private readonly RabbitMqOptions _options = options.Value;
 	
 	private const ushort PrefetchCount = 100;
@@ -56,7 +58,7 @@ public sealed class Worker(
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Failed to buffer RabbitMQ message");
+				logger.RabbitMqMessageBufferFailed(ex, ea.DeliveryTag);
 
 				await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true, cancellationToken: ct);
 			}
@@ -64,7 +66,7 @@ public sealed class Worker(
 
 		await channel.BasicConsumeAsync(queue: _options.DeliveryQueue, autoAck: false, consumer: consumer, cancellationToken: ct);
 
-		logger.LogInformation("Worker started consuming messages");
+		logger.WorkerConsumerStarted(_options.DeliveryQueue, PrefetchCount, BatchSize, BatchTimeout);
 
 		while (!ct.IsCancellationRequested)
 		{
@@ -124,14 +126,23 @@ public sealed class Worker(
 			foreach (var message in batch)
 			{
 				if (!lookup.TryGetValue(message.Body, out var result))
+				{
+					logger.DispatcherResultMissing(message.Body);
 					throw new InvalidOperationException($"Dispatcher returned no result for delivery '{message.Body}'.");
+				}
 
 				await ApplyActionAsync(channel, message, result.Action, ct);
 			}
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex, "Failed to process delivery batch");
+			logger.DeliveryBatchProcessingFailed(
+				ex,
+				batch.Count,
+				string.Join(',', batch.Take(DeliveryIdErrorSampleSize).Select(x => x.Body)));
+			logger.DeliveryBatchProcessingFailedTrace(
+				batch.Count,
+				string.Join(',', batch.Select(x => x.Body)));
 
 			var highestTag = batch.Max(x => x.DeliveryTag);
 			await channel.BasicNackAsync(highestTag, multiple: true, requeue: true, cancellationToken: ct);
@@ -149,11 +160,13 @@ public sealed class Worker(
 			case DeliveryAction.Retry:
 				metrics.MessageRetried();
 				await publisher.PublishAsync(_options.RetryQueue, message.Body, ct);
+				logger.DeliveryRepublishedForRetry(message.Body, _options.RetryQueue);
 				break;
 
 			case DeliveryAction.DeadLetter:
 				metrics.MessageFailed();
 				await publisher.PublishAsync(_options.DeadLetterQueue, message.Body, ct);
+				logger.DeliveryPublishedToDeadLetter(message.Body, _options.DeadLetterQueue);
 				break;
 
 			default:

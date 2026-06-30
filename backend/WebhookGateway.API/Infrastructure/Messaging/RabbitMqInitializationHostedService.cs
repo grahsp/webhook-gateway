@@ -1,22 +1,39 @@
+using Microsoft.Extensions.Options;
+using WebhookGateway.API.Logging;
+
 namespace WebhookGateway.API.Infrastructure.Messaging;
 
 public sealed class RabbitMqInitializationHostedService(
 	IRabbitMqInitializer initializer,
+	IOptions<RabbitMqOptions> options,
 	ILogger<RabbitMqInitializationHostedService> logger)
 	: IHostedService
 {
+	private readonly RabbitMqOptions _options = options.Value;
+	
 	public async Task StartAsync(CancellationToken ct)
 	{
 		try
 		{
-			logger.LogInformation("Initializing RabbitMQ..");
+			logger.RabbitMqInitializationStarted(
+				_options.DeliveryQueue,
+				_options.RetryQueue,
+				_options.DeadLetterQueue,
+				_options.RetryDelaySeconds);
 			await initializer.InitializeAsync(ct);
 			
-			logger.LogInformation("RabbitMQ initialization completed");
+			logger.RabbitMqInitializationCompleted(
+				_options.DeliveryQueue,
+				_options.RetryQueue,
+				_options.DeadLetterQueue);
 		}
 		catch (Exception ex)
 		{
-			logger.LogError(ex, "Failed to initialize RabbitMQ");
+			logger.RabbitMqInitializationFailed(
+				ex,
+				_options.DeliveryQueue,
+				_options.RetryQueue,
+				_options.DeadLetterQueue);
 			throw;
 		}
 	}
