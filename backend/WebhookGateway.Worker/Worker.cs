@@ -62,7 +62,7 @@ public sealed class Worker(
 			}
 		};
 
-		await channel.BasicConsumeAsync(queue: "webhook-deliveries", autoAck: false, consumer: consumer, cancellationToken: ct);
+		await channel.BasicConsumeAsync(queue: _options.DeliveryQueue, autoAck: false, consumer: consumer, cancellationToken: ct);
 
 		logger.LogInformation("Worker started consuming messages");
 
