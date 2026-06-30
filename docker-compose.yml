@@ -16,9 +16,12 @@ services:
     image: rabbitmq:4-management
     container_name: webhook-rabbitmq
     restart: unless-stopped
+    command: >
+      sh -c "rabbitmq-plugins enable --offline rabbitmq_prometheus && rabbitmq-server"
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15692:15692"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
@@ -26,12 +29,15 @@ services:
     image: prom/prometheus:latest
     container_name: webhook-prometheus
     restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
-  
+
   loki:
     image: grafana/loki:latest
     container_name: webhook-loki
