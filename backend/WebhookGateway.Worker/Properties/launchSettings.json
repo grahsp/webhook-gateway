@@ -4,6 +4,7 @@
     "WebhookGateway.Worker": {
       "commandName": "Project",
       "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5074",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

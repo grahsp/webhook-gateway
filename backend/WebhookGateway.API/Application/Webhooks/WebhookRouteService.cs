@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Webhooks.Models;
 using WebhookGateway.API.Domain;
+using WebhookGateway.API.Logging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
@@ -18,7 +19,7 @@ public sealed class WebhookRouteService(
 		db.WebhookRoutes.Add(route);
 		await db.SaveChangesAsync();
 		
-		logger.LogInformation("Created WebhookRoute with id '{Id}'", route.Id);
+		logger.WebhookRouteCreated(route.Id, route.Source);
 		
 		return new WebhookRouteView(route.Id, route.Name, route.Source);
 	}
@@ -42,5 +43,7 @@ public sealed class WebhookRouteService(
 
 		db.WebhookRoutes.Remove(route);
 		await db.SaveChangesAsync();
+		
+		logger.WebhookRouteDeleted(route.Id);
 	}
 }

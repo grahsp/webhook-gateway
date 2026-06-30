@@ -7,6 +7,7 @@ using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Extensions;
 using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Infrastructure.Metrics;
+using WebhookGateway.API.Logging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API.Application.Webhooks;
@@ -55,11 +56,21 @@ public sealed class WebhookIngestor(
 		try
 		{
 			await db.SaveChangesAsync();
-			logger.LogInformation("Webhook received: {DeliveryId}", metadata.DeliveryId);
+			logger.WebhookReceived(
+				route.Id,
+				webhookEvent.Id,
+				metadata.DeliveryId ?? "unknown",
+				route.Source,
+				metadata.EventType ?? "unknown",
+				webhookEvent.Deliveries.Count);
 		}
 		catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
 		{
-			logger.LogInformation("Duplicate webhook received: {DeliveryId}", metadata.DeliveryId);
+			logger.DuplicateWebhookIgnored(
+				route.Id,
+				metadata.DeliveryId ?? "unknown",
+				route.Source,
+				metadata.EventType ?? "unknown");
 			return;
 		}
 
@@ -68,10 +79,11 @@ public sealed class WebhookIngestor(
 			try
 			{
 				await queue.PublishAsync(_options.DeliveryQueue, delivery.Id);
+				logger.DeliveryQueued(webhookEvent.Id, delivery.Id, _options.DeliveryQueue);
 			}
 			catch(Exception ex)
 			{
-				logger.LogError(ex, "Failed to enqueue deliveries for event {EventId}", webhookEvent.Id);
+				logger.WebhookEnqueueFailed(ex, webhookEvent.Id, delivery.Id, _options.DeliveryQueue);
 				throw;
 			}
 		}

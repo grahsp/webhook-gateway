@@ -4,6 +4,7 @@ using WebhookGateway.API.Application.Exceptions;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Domain;
 using WebhookGateway.API.Infrastructure.Webhooks;
+using WebhookGateway.API.Logging;
 
 namespace WebhookGateway.API.Application.Sources;
 
@@ -40,7 +41,7 @@ public sealed class GithubWebhookSourceHandler(
 
 			if (!CryptographicOperations.FixedTimeEquals(expected, provided))
 			{
-				logger.LogWarning("Invalid signature for source '{Source}'", Source);
+				logger.InvalidWebhookSignature(Source);
 				throw new InvalidWebhookSignatureException();
 			}
 		}

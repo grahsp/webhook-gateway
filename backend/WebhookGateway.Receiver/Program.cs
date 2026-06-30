@@ -27,6 +27,22 @@ public class Program
 			return Results.Ok();
 		});
 
+		app.MapPost("/random", async () =>
+		{
+			var random = new Random();
+			// await Task.Delay(TimeSpan.FromSeconds(random.Next(1, 5)));
+
+			var result = random.Next(0, 100);
+			
+			Console.WriteLine($"Responded with {result}");
+			return result switch
+			{
+				< 50 => Results.Ok(),
+				< 80 => Results.StatusCode(500),
+				_ => Results.StatusCode(300)
+			};
+		});
+
 		app.Run();
 	}
 }
