@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using WebhookGateway.API.Api.Extensions;
 using WebhookGateway.API.Application.Webhooks;
 using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Infrastructure.Metrics;
@@ -29,6 +30,7 @@ public class Program
 		builder.Services.AddDbContext<AppDbContext>(opts
 			=> opts.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql")));
 
+		builder.Services.AddWebhookGatewayHealthChecks();
 		builder.Services.AddSingleton<WorkerMetrics>();
 		
 		builder.Services
@@ -39,6 +41,7 @@ public class Program
 			{
 				metrics
 					.AddMeter(WorkerMetrics.MeterName)
+					.AddMeter(HealthMetrics.MeterName)
 					.AddPrometheusExporter();
 			});
 		
@@ -56,6 +59,7 @@ public class Program
 
 		var app = builder.Build();
 
+		app.MapWebhookGatewayHealthChecks();
 		app.MapPrometheusScrapingEndpoint();
 		
 		app.Run();

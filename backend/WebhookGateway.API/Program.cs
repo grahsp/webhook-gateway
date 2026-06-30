@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using WebhookGateway.API.Api.Extensions;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
@@ -38,6 +39,8 @@ public class Program
 
 		builder.Services.ConfigureHttpJsonOptions(options
 			=> options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+		builder.Services.AddWebhookGatewayHealthChecks();
 		
 		builder.Services.AddSingleton<IngestionMetrics>();
 
@@ -51,6 +54,7 @@ public class Program
 					.AddAspNetCoreInstrumentation()
 					.AddHttpClientInstrumentation()
 					.AddMeter(IngestionMetrics.MeterName)
+					.AddMeter(HealthMetrics.MeterName)
 					.AddPrometheusExporter();
 			});
 
@@ -89,8 +93,8 @@ public class Program
 
 		app.UseHttpsRedirection();
 
+		app.MapWebhookGatewayHealthChecks();
 		app.MapPrometheusScrapingEndpoint();
-		app.MapGet("/", () => "success");
 
 		app.MapWebhookEndpoints();
 		
