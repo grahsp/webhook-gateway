@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using WebhookGateway.API.Api.Middleware;
 using WebhookGateway.API.Application.Sources;
 using WebhookGateway.API.Application.Webhooks;
@@ -8,6 +9,7 @@ using WebhookGateway.API.Endpoints;
 using WebhookGateway.API.Infrastructure.Messaging;
 using WebhookGateway.API.Infrastructure.Metrics;
 using WebhookGateway.API.Infrastructure.Webhooks;
+using WebhookGateway.API.Logging;
 using WebhookGateway.API.Persistence;
 
 namespace WebhookGateway.API;
@@ -17,6 +19,11 @@ public class Program
 	public static void Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
+		
+		builder.Services.AddWebhookGatewaySerilog(
+			builder.Configuration,
+			builder.Environment,
+			ServiceNames.Api);
 
 		if (builder.Environment.IsDevelopment())
 		{
@@ -36,6 +43,8 @@ public class Program
 
 		builder.Services
 			.AddOpenTelemetry()
+			.ConfigureResource(resource => resource.AddService(
+				SerilogConfiguration.GetServiceName(builder.Configuration, ServiceNames.Api)))
 			.WithMetrics(metrics =>
 			{
 				metrics
