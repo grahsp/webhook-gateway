@@ -13,3 +13,15 @@ scrape_configs:
     static_configs:
       - targets:
           - host.docker.internal:5074
+
+  - job_name: "rabbitmq"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+          - rabbitmq:15692
+
+  - job_name: "rabbitmq-per-object"
+    metrics_path: "/metrics/per-object"
+    static_configs:
+      - targets:
+          - rabbitmq:15692
